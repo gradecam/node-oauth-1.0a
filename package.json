@@ -9,7 +9,8 @@
     "test": "make test"
   },
   "main": "index.js",
-  "repository": "https://github.com/whs/node-oauth-1.0a.git",
+  "typings": "dist/oauth.d.ts",
+  "repository": "https://github.com/gradecam/node-oauth-1.0a.git",
   "keywords": [
     "oauth",
     "1.0a",
