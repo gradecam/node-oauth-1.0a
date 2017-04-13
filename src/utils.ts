@@ -1,14 +1,6 @@
 import * as querystring from "querystring";
 import * as url from "url";
 
-// These OAuth fields should be ignored when computing signatures even
-// if they are present in the data passed to the `authorize` method.
-const OAUTH_IGNORE = [
-    "oauth_consumer_secret",
-    "oauth_signature",
-    "oauth_token_secret",
-];
-
 /**
  * @private
  */
@@ -61,7 +53,13 @@ export namespace Utils {
     export function getParameterString(request: any, oauth_data: any) {
         let parsedUrl = url.parse(request.url, true);
         let data = Object.assign({}, parsedUrl.query, request.data || {}, oauth_data);
-        OAUTH_IGNORE.forEach(key => delete data[key]);
+        // These OAuth fields should be ignored when computing signatures even
+        // if they are present in the data passed to the `authorize` method.
+        [
+            "oauth_consumer_secret",
+            "oauth_signature",
+            "oauth_token_secret",
+        ].forEach(key => delete data[key]);
         data = Utils.toSortedMap(data);
 
         return Utils.stringifyQueryMap(data, '&', '=', {
@@ -129,7 +127,7 @@ export namespace Utils {
      * @return {Map}
      */
     export function toSortedMap(object: any) {
-        let keys = Object.keys(object).filter(k => OAUTH_IGNORE.indexOf(k) < 0);
+        let keys = Object.keys(object);
         keys.sort();
 
         let out = new Map();
