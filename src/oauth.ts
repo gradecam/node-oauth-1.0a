@@ -162,9 +162,18 @@ export class OAuth {
      * }
      */
     authorize(request: RequestOpts, token?: Token) {
-        token = token || {};
+        let bodyToHash: string | undefined;
+        if(request.includeBodyHash) {
+            if(typeof request.data != 'string') {
+                throw Error("When using includeBodyHash request.data must be the exact data string of the request");
+            }
+            bodyToHash = request.data;
+        }
 
-        let oauth_data: OAuthData = this._getOAuthData(token);
+        token = token || {};
+        bodyToHash = bodyToHash || undefined;
+
+        let oauth_data: OAuthData = this._getOAuthData(token, bodyToHash);
         oauth_data.oauth_signature = this.getSignature(request, token.secret, oauth_data);
 
         return oauth_data;
@@ -235,6 +244,7 @@ export class OAuth {
      * @private
      * @param {Object} [token] User token
      * @param {string} token.public Token public key
+     * @param  {string|undefined} bodyToHash the body of the rquest (after decompression) as a string
      * @return {Object} OAuth data without oauth_signature
      *
      * @example <caption>Example response</caption>
@@ -247,7 +257,7 @@ export class OAuth {
      *     "oauth_token": "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
      * }
      */
-    _getOAuthData(token: Token): OAuthData {
+    _getOAuthData(token: Token, bodyToHash?: string): OAuthData {
         let oauth_data: OAuthData = {
             oauth_consumer_key: this._opts.consumer.public,
             oauth_nonce: this._getNonce(),
@@ -260,7 +270,26 @@ export class OAuth {
             oauth_data.oauth_token = token.public;
         }
 
+        if(bodyToHash) {
+            oauth_data.oauth_body_hash = this._getBodyHash(token, bodyToHash);
+        }
+
         return oauth_data;
+    }
+
+    /**
+     * Get the body hash for the request according to 
+     * [OAuth Request Body Hash]{@link http://web.archive.org/web/20160413130001/https://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html}
+     * @param {Object} [token] User token
+     * @param {string} token.secret Token secret key
+     * @param  {string} bodyToHash the body of the rquest (after decompression) as a string
+     * @return {string} the hash of the body, using the same algorithm as for signing the request
+     */
+    _getBodyHash(token: Token, bodyToHash: string): string {
+        return this._sign(
+            bodyToHash,
+            this._getSigningKey(token.secret || '')
+        );
     }
 
     /**
@@ -372,6 +401,7 @@ export interface OAuthConsumer {
 export interface RequestOpts {
     method: string; // HTTP method
     url: string;    // URL
+    includeBodyHash?: boolean; // whether to use OAuth body hashing
     data?: any; // Post data as a key, value map
 }
 
@@ -386,6 +416,7 @@ export interface OAuthData {
     oauth_version: string;   // OAuth version
     oauth_signature?: string;  // Signature of the request data
     oauth_token?: string;
+    oauth_body_hash?: string; // the hash of the body to be used for non-url-encoded requests
 }
 
 export interface Token {

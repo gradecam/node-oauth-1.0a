@@ -52,7 +52,12 @@ export namespace Utils {
      */
     export function getParameterString(request: any, oauth_data: any) {
         let parsedUrl = url.parse(request.url, true);
-        let data = Object.assign({}, parsedUrl.query, request.data || {}, oauth_data);
+        // If we are using body hashing then request.data will be a string that should be the exact
+        // text of the request body (after decompression) rather than a set of key value pairs.
+        // In this case we take a hash of the body itself and include it in the oauth_data.
+        // http://web.archive.org/web/20160413130001/https://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html
+        const requestData = request.includeBodyHash ? undefined : request.data;
+        let data = Object.assign({}, parsedUrl.query, requestData || {}, oauth_data);
         // These OAuth fields should be ignored when computing signatures even
         // if they are present in the data passed to the `authorize` method.
         [
