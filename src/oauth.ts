@@ -1,5 +1,6 @@
 import * as querystring from "querystring";
 import * as randomstring from "randomstring";
+import * as crypto from "crypto";
 
 import {Signer, SignerType} from "./signer";
 import Utils from "./utils";
@@ -233,8 +234,9 @@ export class OAuth {
      * @return {string} Value of oauth_signature field
      */
     getSignature(request: RequestOpts, token: string | undefined, oauth_data: OAuthData) {
+        let baseString = this._getBaseString(request, oauth_data);
         return this._sign(
-            this._getBaseString(request, oauth_data),
+            baseString,
             this._getSigningKey(token)
         );
     }
@@ -271,25 +273,22 @@ export class OAuth {
         }
 
         if(bodyToHash) {
-            oauth_data.oauth_body_hash = this._getBodyHash(token, bodyToHash);
+            oauth_data.oauth_body_hash = this._getBodyHash(bodyToHash);
         }
 
         return oauth_data;
     }
 
     /**
-     * Get the body hash for the request according to 
-     * [OAuth Request Body Hash]{@link http://web.archive.org/web/20160413130001/https://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html}
+     * Get the body hash for the request according to
+     * [OAuth Request Body Hash]{@link http://web.archive.org/web/20160413130001/https://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html}  // tslint:disable-line
      * @param {Object} [token] User token
      * @param {string} token.secret Token secret key
      * @param  {string} bodyToHash the body of the rquest (after decompression) as a string
      * @return {string} the hash of the body, using the same algorithm as for signing the request
      */
-    _getBodyHash(token: Token, bodyToHash: string): string {
-        return this._sign(
-            bodyToHash,
-            this._getSigningKey(token.secret || '')
-        );
+    _getBodyHash(bodyToHash: string): string {
+        return crypto.createHash('sha1').update(bodyToHash).digest('base64');
     }
 
     /**
