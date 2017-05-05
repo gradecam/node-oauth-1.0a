@@ -1,6 +1,6 @@
 {
   "name": "node-oauth-1.0a-ts",
-  "version": "4.0.4",
+  "version": "4.0.5",
   "description": "OAuth 1.0a Request Authorization for Node and Browser.",
   "scripts": {
     "build": "tsc --project .",
